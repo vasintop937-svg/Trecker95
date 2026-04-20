@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Объём работ на неделю</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: #0f0f0f;
+    font-family: 'Georgia', serif;
+    color: #f0ece0;
+    padding-bottom: 80px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .header { padding: 32px 24px 20px; border-bottom: 1px solid #2a2a2a; background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%); }
+  .header-label { font-size: 11px; letter-spacing: 4px; color: #888; text-transform: uppercase; margin-bottom: 8px; }
+  .header h1 { font-size: 28px; font-weight: normal; line-height: 1.2; }
+  .header h1 span { color: #c8a96e; font-style: italic; }
+  .header-progress { margin-top: 16px; display: flex; align-items: center; gap: 12px; }
+  .ring-outer { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ring-inner { width: 36px; height: 36px; border-radius: 50%; background: #0f0f0f; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #c8a96e; font-weight: bold; }
+  .progress-text { font-size: 13px; color: #aaa; }
+  .progress-sub { font-size: 11px; color: #666; margin-top: 2px; }
+  .nav { display: flex; border-bottom: 1px solid #2a2a2a; background: #111; }
+  .nav button { flex: 1; padding: 12px 4px; border: none; cursor: pointer; background: transparent; color: #666; font-size: 12px; letter-spacing: 1px; border-bottom: 2px solid transparent; font-family: inherit; transition: all 0.2s; }
+  .nav button.active { background: #1e1e1e; color: #c8a96e; border-bottom: 2px solid #c8a96e; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .week-view { padding: 20px 16px; }
+  .task-card { margin-bottom: 20px; background: #1a1a1a; border-radius: 12px; overflow: hidden; border: 1px solid #2a2a2a; }
+  .task-header { padding: 12px 16px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 10px; }
+  .task-emoji { font-size: 20px; }
+  .task-info { flex: 1; }
+  .task-name { font-size: 14px; font-weight: bold; color: #f0ece0; }
+  .task-desc { font-size: 11px; color: #777; margin-top: 2px; }
+  .task-count { font-size: 12px; color: #c8a96e; background: #2a2010; padding: 2px 8px; border-radius: 20px; }
+  .day-buttons { display: flex; padding: 10px 16px; gap: 6px; flex-wrap: wrap; }
+  .day-btn { width: 40px; height: 40px; border-radius: 8px; border: 2px solid #333; background: #222; color: #555; cursor: pointer; font-size: 11px; font-family: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; transition: all 0.15s; }
+  .day-btn.inactive { border-color: #1f1f1f; background: #141414; color: #333; cursor: default; }
+  .day-btn.done { border-color: #c8a96e; background: #2a1e08; color: #c8a96e; }
+  .day-btn .day-date { font-size: 9px; letter-spacing: 0.5px; }
+  .day-selector { display: flex; overflow-x: auto; padding: 12px 16px; gap: 8px; border-bottom: 1px solid #222; scrollbar-width: none; }
+  .day-selector::-webkit-scrollbar { display: none; }
+  .day-tab { flex: 0 0 auto; padding: 8px 12px; border-radius: 20px; border: 2px solid #2a2a2a; background: #1a1a1a; color: #777; cursor: pointer; font-size: 12px; font-family: inherit; text-align: center; transition: all 0.2s; line-height: 1.5; }
+  .day-tab.active { border-color: #c8a96e; background: #2a1e08; color: #c8a96e; }
+  .day-tab .tab-sub { font-size: 10px; color: #555; }
+  .day-content { padding: 16px; }
+  .day-title { font-size: 16px; margin-bottom: 16px; color: #888; }
+  .checklist-item { margin-bottom: 12px; padding: 16px; background: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; cursor: pointer; display: flex; align-items: center; gap: 14px; transition: all 0.2s; user-select: none; }
+  .checklist-item.done { background: #1e1a0e; border-color: rgba(200,169,110,0.27); }
+  .check-circle { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #444; background: transparent; display: flex; align-items: center; justify-content: center; color: #0f0f0f; font-size: 14px; flex-shrink: 0; transition: all 0.2s; }
+  .checklist-item.done .check-circle { border-color: #c8a96e; background: #c8a96e; }
+  .item-text { font-size: 14px; color: #f0ece0; }
+  .checklist-item.done .item-text { color: #c8a96e; }
+  .item-desc { font-size: 11px; color: #666; margin-top: 3px; }
+  .day-stats { margin-top: 8px; text-align: right; font-size: 12px; color: #555; }
+  .summary-view { padding: 20px 16px; }
+  .summary-ring { text-align: center; margin-bottom: 32px; }
+  .big-ring { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; }
+  .big-ring-inner { width: 90px; height: 90px; border-radius: 50%; background: #0f0f0f; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .big-pct { font-size: 28px; color: #c8a96e; font-weight: bold; }
+  .big-sub { font-size: 10px; color: #666; }
+  .summary-verdict { font-size: 22px; }
+  .stat-bar-card { margin-bottom: 12px; padding: 14px 16px; background: #1a1a1a; border-radius: 10px; border: 1px solid #2a2a2a; }
+  .stat-bar-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .stat-bar-name { flex: 1; font-size: 13px; }
+  .bar-track { height: 4px; background: #2a2a2a; border-radius: 2px; }
+  .bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+  .notes-box { margin-top: 24px; padding: 16px; background: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; font-size: 12px; color: #666; line-height: 1.8; }
+  .notes-title { color: #888; margin-bottom: 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-label">20 апреля — 26 апреля 2026</div>
+  <h1>Объём работ<br/><span>на неделю</span></h1>
+  <div class="header-progress">
+    <div class="ring-outer" id="headerRing">
+      <div class="ring-inner" id="headerPct">0%</div>
+    </div>
+    <div>
+      <div class="progress-text" id="progressText">0 из 0 задач</div>
+      <div class="progress-sub">выполнено за неделю</div>
+    </div>
+  </div>
+</div>
+<div class="nav">
+  <button class="active" onclick="switchView('week', this)">Неделя</button>
+  <button onclick="switchView('day', this)">По дням</button>
+  <button onclick="switchView('summary', this)">Итоги</button>
+</div>
+<div id="view-week" class="view active week-view"></div>
+<div id="view-day" class="view">
+  <div class="day-selector" id="daySelector"></div>
+  <div class="day-content" id="dayContent"></div>
+</div>
+<div id="view-summary" class="view summary-view"></div>
+<script>
+const DAYS=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+const FULL_DAYS=["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота","Воскресенье"];
+const DAY_DATES=["20 апр","21 апр","22 апр","23 апр","24 апр","25 апр","26 апр"];
+const TASKS=[
+  {id:"phone",emoji:"📵",name:"Упрощённый режим телефона",desc:"Контроль фокуса внимания",days:[0,1,2,3,4,5,6]},
+  {id:"shower",emoji:"🧊",name:"Холодный душ",desc:"Каждое утро",days:[0,1,2,3,4,5,6]},
+  {id:"vacuum",emoji:"🌀",name:"Пропылесосить квартиру",desc:"3 раза в неделю",days:[1,3,5]},
+  {id:"app",emoji:"💻",name:"Работа над приложением",desc:"30 минут",days:[1,3,5,6]},
+  {id:"dacha",emoji:"🏆",name:"Дачные игры: Кубок четырёх фамилий",desc:"30 минут — план и структура мероприятия",days:[0,1,2,3,4,5,6]},
+  {id:"review",emoji:"📊",name:"Оценка недели в процентах",desc:"Итоги прямо здесь",days:[6]}
+];
+const STORAGE_KEY="weekly-tracker-v1";
+function load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");}catch{return {};}}
+function save(data){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}catch{}}
+let checked=load();
+let activeDay=0;
+function isChecked(id,d){return !!checked[id+"_"+d];}
+function toggle(id,d){checked[id+"_"+d]=!checked[id+"_"+d];save(checked);render();}
+function getStats(){
+  const p=TASKS.reduce((a,t)=>a+t.days.length,0);
+  const d=TASKS.reduce((a,t)=>a+t.days.filter(d=>isChecked(t.id,d)).length,0);
+  return{totalPossible:p,totalDone:d,pct:p>0?Math.round(d/p*100):0};
+}
+function switchView(name,btn){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+  document.getElementById("view-"+name).classList.add("active");
+  btn.classList.add("active");
+  render();
+}
+function render(){renderHeader();renderWeek();renderDay();renderSummary();}
+function renderHeader(){
+  const{totalPossible,totalDone,pct}=getStats();
+  document.getElementById("headerPct").textContent=pct+"%";
+  document.getElementById("progressText").textContent=totalDone+" из "+totalPossible+" задач";
+  document.getElementById("headerRing").style.background=`conic-gradient(#c8a96e ${pct*3.6}deg, #2a2a2a 0deg)`;
+}
+function renderWeek(){
+  document.getElementById("view-week").innerHTML=TASKS.map(task=>{
+    const done=task.days.filter(d=>isChecked(task.id,d)).length;
+    const btns=DAYS.map((day,idx)=>{
+      const act=task.days.includes(idx);
+      const dn=isChecked(task.id,idx);
+      let cls="day-btn"+((!act)?" inactive":(dn?" done":""));
+      const lbl=dn&&act?"✓":act?day[0]:"·";
+      const clk=act?`onclick="toggle('${task.id}',${idx})"`:"";
+      return`<button class="${cls}"${clk}><span class="day-date">${DAY_DATES[idx].split(" ")[0]}</span><span>${lbl}</span></button>`;
+    }).join("");
+    return`<div class="task-card"><div class="task-header"><span class="task-emoji">${task.emoji}</span><div class="task-info"><div class="task-name">${task.name}</div><div class="task-desc">${task.desc}</div></div><div class="task-count">${done}/${task.days.length}</div></div><div class="day-buttons">${btns}</div></div>`;
+  }).join("");
+}
+function renderDay(){
+  document.getElementById("daySelector").innerHTML=DAYS.map((d,i)=>`<button class="day-tab${i===activeDay?" active":""}" onclick="setDay(${i})">${d}<br/><span class="tab-sub">${DAY_DATES[i]}</span></button>`).join("");
+  const tasks=TASKS.filter(t=>t.days.includes(activeDay));
+  const doneCount=tasks.filter(t=>isChecked(t.id,activeDay)).length;
+  const items=tasks.length===0?`<div style="color:#444;font-size:14px;text-align:center;margin-top:40px">Нет задач</div>`:tasks.map(task=>{
+    const dn=isChecked(task.id,activeDay);
+    return`<div class="checklist-item${dn?" done":""}" onclick="toggle('${task.id}',${activeDay})"><div class="check-circle">${dn?"✓":""}</div><div><div class="item-text">${task.emoji} ${task.name}</div><div class="item-desc">${task.desc}</div></div></div>`;
+  }).join("");
+  document.getElementById("dayContent").innerHTML=`<div class="day-title">${FULL_DAYS[activeDay]}, ${DAY_DATES[activeDay]}</div>${items}<div class="day-stats">${doneCount} / ${tasks.length} выполнено</div>`;
+}
+function setDay(idx){activeDay=idx;renderDay();}
+function renderSummary(){
+  const{pct}=getStats();
+  const verdict=pct>=80?"🌟 Отличная неделя!":pct>=50?"💪 Хороший результат":"🔄 Есть над чем работать";
+  const vc=pct>=80?"#8bc87a":pct>=50?"#c8a96e":"#e87a7a";
+  const bars=TASKS.map(task=>{
+    const done=task.days.filter(d=>isChecked(task.id,d)).length;
+    const total=task.days.length;
+    const p=total>0?Math.round(done/total*100):0;
+    const bc=p===100?"#8bc87a":p===0?"rgba(232,122,122,0.27)":"#c8a96e";
+    const cc=p===100?"#8bc87a":p===0?"#e87a7a":"#c8a96e";
+    return`<div class="stat-bar-card"><div class="stat-bar-header"><span style="font-size:18px">${task.emoji}</span><span class="stat-bar-name">${task.name}</span><span class="stat-bar-count" style="color:${cc}">${done}/${total}</span></div><div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${bc}"></div></div></div>`;
+  }).join("");
+  document.getElementById("view-summary").innerHTML=`<div class="summary-ring"><div class="big-ring" style="background:conic-gradient(#c8a96e ${pct*3.6}deg,#2a2a2a 0deg)"><div class="big-ring-inner"><div class="big-pct">${pct}%</div><div class="big-sub">выполнено</div></div></div><div class="summary-verdict" style="color:${vc}">${verdict}</div></div>${bars}<div class="notes-box"><div class="notes-title">📝 Заметки к итогам</div><div>Нажимай на задачи в «По дням», чтобы отмечать выполнение.</div></div>`;
+}
+render();
+</script>
+</body>
+</html>
